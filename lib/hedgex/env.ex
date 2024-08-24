@@ -23,9 +23,26 @@ defmodule Hedgex.Env do
           personal_api_key: String.t() | nil
         }
 
+  @spec new(
+          public_endpoint: String.t(),
+          private_endpoint: String.t(),
+          project_api_key: String.t(),
+          personal_api_key: String.t()
+        ) :: t()
   def new(opts \\ []) do
     [:public_endpoint, :private_endpoint, :project_api_key, :personal_api_key]
     |> Enum.map(&{&1, opts[&1] || Application.get_env(:hedgex, :public_endpoint)})
     |> Map.new()
+    |> then(&struct(__MODULE__, &1))
+  end
+
+  @doc """
+  Construct a Req.Request for public API calls, e.g. `capture`.  Note that for public calls, the project API key still
+  needs to be passed in the body as part of the POST.
+  """
+  @spec public_req(t()) :: Req.Request.t()
+  def public_req(%__MODULE__{} = env) do
+    [base_url: env.public_endpoint]
+    |> Req.new()
   end
 end

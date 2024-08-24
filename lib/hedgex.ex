@@ -31,8 +31,7 @@ defmodule Hedgex do
     env = opts[:hedgex] || Env.new()
     event_body = Map.take(event, [:event, :distinct_id, :properties, :timestamp])
 
-    [base_url: env.public_endpoint]
-    |> Req.new()
+    Env.public_req(env)
     |> Req.post(url: "/capture", json: Map.merge(event_body, %{api_key: env.project_api_key}))
     |> map_req_response(fn _ -> :ok end)
   end
@@ -60,8 +59,7 @@ defmodule Hedgex do
       batch: batch
     }
 
-    [base_url: env.public_endpoint]
-    |> Req.new()
+    Env.public_req(env)
     |> Req.post(url: "/batch", json: request_body)
     |> map_req_response(fn _ -> :ok end)
   end
