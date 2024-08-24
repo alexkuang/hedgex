@@ -64,6 +64,35 @@ defmodule Hedgex do
     |> map_req_response(fn _ -> :ok end)
   end
 
+  @doc """
+  Call the public `decide` endpoint used to evaluate feature flag state for a given user.  See
+  https://posthog.com/docs/api/decide for more details.
+
+  ## Options
+
+    * `:groups` - (optional) Group config used to evaluate the feature flag
+
+  ## Examples
+
+      iex> Hedgex.decide("user_12345", groups: %{company: "Acme, Inc."}}])
+      {:ok, %{"featureFlags" => %{"my-awesome-flag" => true}}}
+  """
+  @spec decide(distinct_id :: any(), opts :: Keyword.t()) ::
+          {:ok, map()} | {:error, Exception.t()}
+  def decide(distinct_id, opts \\ []) do
+    env = opts[:hedgex] || Env.new()
+
+    request_body = %{
+      api_key: env.project_api_key,
+      distinct_id: distinct_id,
+      groups: opts[:groups]
+    }
+
+    Env.public_req(env)
+    |> Req.post(url: "/decide", json: request_body)
+    |> map_req_response(fn response -> {:ok, response.body} end)
+  end
+
   def map_req_response(response, success_fun) do
     case response do
       {:ok, %{status: 200} = resp} ->
