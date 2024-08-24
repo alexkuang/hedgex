@@ -1,15 +1,17 @@
 defmodule Hedgex.MixProject do
   use Mix.Project
 
+  @version "0.1.0"
   @source_url "https://github.com/alexkuang/hedgex"
 
   def project do
     [
       app: :hedgex,
-      version: "0.1.0",
+      version: @version,
       elixir: "~> 1.14",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
+      docs: docs(),
       description: "Posthog client for Elixir.",
       package: package(),
       dialyzer: dialyzer_settings()
@@ -28,7 +30,8 @@ defmodule Hedgex.MixProject do
     [
       {:req, "~> 0.5.0"},
       {:plug, "~> 1.0", only: :test},
-      {:dialyxir, "~> 1.4", only: [:dev], runtime: false}
+      {:dialyxir, "~> 1.4", only: [:dev], runtime: false},
+      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
     ]
   end
 
@@ -36,6 +39,19 @@ defmodule Hedgex.MixProject do
     [
       plt_file: {:no_warn, "priv/plts/hedgex.plt"},
       plt_add_apps: [:mix]
+    ]
+  end
+
+  defp docs do
+    [
+      extras: [
+        "LICENSE.md": [title: "License"],
+        "README.md": [title: "Overview"]
+      ],
+      main: "readme",
+      source_url: @source_url,
+      source_ref: "v#{@version}",
+      formatters: ["html"]
     ]
   end
 
