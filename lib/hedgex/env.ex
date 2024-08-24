@@ -43,6 +43,7 @@ defmodule Hedgex.Env do
   @spec public_req(t()) :: Req.Request.t()
   def public_req(%__MODULE__{} = env) do
     [base_url: env.public_endpoint]
+    |> Keyword.merge(Application.get_env(:hedgex, :req_options, []))
     |> Req.new()
   end
 end

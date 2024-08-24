@@ -27,6 +27,7 @@ defmodule Hedgex.MixProject do
   defp deps do
     [
       {:req, "~> 0.5.0"},
+      {:plug, "~> 1.0", only: :test},
       {:dialyxir, "~> 1.4", only: [:dev], runtime: false}
     ]
   end
