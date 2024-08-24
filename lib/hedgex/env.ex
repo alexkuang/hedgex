@@ -1,5 +1,7 @@
 defmodule Hedgex.Env do
-  @moduledoc false
+  @moduledoc """
+  Struct holding configuration + environment context.
+  """
 
   defstruct public_endpoint: nil,
             private_endpoint: nil,
