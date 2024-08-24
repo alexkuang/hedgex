@@ -24,3 +24,7 @@ hedgex-*.tar
 
 # Temporary files, for example, from tests.
 /tmp/
+
+# cache these to speed up dialyzer, but no need to commit.
+/priv/plts/*.plt
+/priv/plts/*.plt.hash
