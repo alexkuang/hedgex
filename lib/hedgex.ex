@@ -26,21 +26,15 @@ defmodule Hedgex do
       iex> Hedgex.capture(%{event: "foo_created", distinct_id: "user_12345", properties: %{}})
       :ok
   """
-  @spec capture(event :: event_body, opts :: Keyword.t()) :: :ok | {:error, map()}
+  @spec capture(event :: event_body, opts :: Keyword.t()) :: :ok | {:error, Exception.t()}
   def capture(event, opts \\ []) do
     env = opts[:hedgex] || Env.new()
     event_body = Map.take(event, [:event, :distinct_id, :properties, :timestamp])
 
-    response =
-      [base_url: env.public_endpoint]
-      |> Req.new()
-      |> Req.post(url: "/capture", json: Map.merge(event_body, %{api_key: env.project_api_key}))
-
-    case response do
-      {:ok, %{status: 200}} -> :ok
-      {:ok, %{status: _status, body: body}} -> {:error, body}
-      {:error, err} -> {:error, err}
-    end
+    [base_url: env.public_endpoint]
+    |> Req.new()
+    |> Req.post(url: "/capture", json: Map.merge(event_body, %{api_key: env.project_api_key}))
+    |> map_req_response(fn _ -> :ok end)
   end
 
   @doc """
@@ -55,7 +49,7 @@ defmodule Hedgex do
       iex> Hedgex.batch([%{event: "foo_created", distinct_id: "user_12345", properties: %{}}])
       :ok
   """
-  @spec batch(batch :: [event_body], opts :: Keyword.t()) :: :ok | {:error, map()}
+  @spec batch(batch :: [event_body], opts :: Keyword.t()) :: :ok | {:error, Exception.t()}
   def batch(batch, opts \\ []) do
     env = opts[:hedgex] || Env.new()
     historical_migration = opts[:historical_migration] || false
@@ -66,15 +60,22 @@ defmodule Hedgex do
       batch: batch
     }
 
-    response =
-      [base_url: env.public_endpoint]
-      |> Req.new()
-      |> Req.post(url: "/batch", json: request_body)
+    [base_url: env.public_endpoint]
+    |> Req.new()
+    |> Req.post(url: "/batch", json: request_body)
+    |> map_req_response(fn _ -> :ok end)
+  end
 
+  def map_req_response(response, success_fun) do
     case response do
-      {:ok, %{status: 200}} -> :ok
-      {:ok, %{status: _status, body: body}} -> {:error, body}
-      {:error, err} -> {:error, err}
+      {:ok, %{status: 200} = resp} ->
+        success_fun.(resp)
+
+      {:ok, %{status: status, body: body}} ->
+        {:error, %Hedgex.PosthogError{status: status, body: body}}
+
+      {:error, err} ->
+        {:error, %Hedgex.ReqError{error: err}}
     end
   end
 end
