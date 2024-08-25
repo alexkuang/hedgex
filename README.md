@@ -16,6 +16,30 @@ def deps do
 end
 ```
 
+## Usage
+
+Configure the API:
+
+```elixir
+config :hedgex,
+  public_endpoint: "https://us.i.posthog.com",
+  project_api_key: "abcde12345"
+```
+
+Use to make requests:
+
+```elixir
+iex> Hedgex.capture(%{event: "foo_created", distinct_id: "user_12345"})
+:ok
+
+# or provide creds dynamically
+iex(1)> Hedgex.capture(
+...(1)>   %{event: "foo_created", distinct_id: "user_12345", properties: %{}},
+...(1)>   hedgex: Hedgex.Env.new(public_endpoint: "...", project_api_key: "...")
+...(1)> )
+:ok
+```
+
 ## Documentation
 
 [Latest HexDocs](https://hexdocs.pm/hedgex/)
