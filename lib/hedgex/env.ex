@@ -33,7 +33,7 @@ defmodule Hedgex.Env do
         ) :: t()
   def new(opts \\ []) do
     [:public_endpoint, :private_endpoint, :project_api_key, :personal_api_key]
-    |> Enum.map(&{&1, opts[&1] || Application.get_env(:hedgex, :public_endpoint)})
+    |> Enum.map(&{&1, opts[&1] || Application.get_env(:hedgex, &1)})
     |> Map.new()
     |> then(&struct(__MODULE__, &1))
   end
