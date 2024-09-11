@@ -10,6 +10,16 @@ defmodule Hedgex do
   """
 
   alias Hedgex.Api
+  alias Hedgex.Events
+
+  @doc """
+  Add metadata `properties` to users in PostHog.
+
+  See: https://posthog.com/docs/api/capture#identify
+  """
+  def identify(distinct_id, properties, opts \\ []) do
+    capture(Events.identify(distinct_id, properties), opts)
+  end
 
   defdelegate capture(event, opts \\ []), to: Api
   defdelegate batch(events, opts \\ []), to: Api

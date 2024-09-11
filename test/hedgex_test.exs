@@ -1,6 +1,8 @@
 defmodule HedgexTest do
   use ExUnit.Case
 
+  alias Plug.Conn
+
   describe "capture/1" do
     test "returns :ok on success" do
       Req.Test.stub(Hedgex, fn conn -> Req.Test.json(conn, %{}) end)
@@ -55,6 +57,27 @@ defmodule HedgexTest do
 
       assert {:error, %{status: 401, body: "message"}} =
                Hedgex.batch([%{event: "foo", distinct_id: 12345}])
+    end
+  end
+
+  describe "identify/1" do
+    test "executes a `capture` with provided distinct id and properties" do
+      user_id = "user_1"
+      properties = %{"email" => "foo@example.com"}
+
+      Req.Test.stub(Hedgex, fn conn ->
+        {:ok, raw, _conn} = Conn.read_body(conn)
+        body = Jason.decode!(raw)
+
+        assert conn.request_path == "/capture"
+        assert body["distinct_id"] == user_id
+        assert body["event"] == "$identify"
+        assert body["properties"]["$set"] == properties
+
+        Req.Test.json(conn, %{})
+      end)
+
+      assert :ok == Hedgex.identify(user_id, properties)
     end
   end
 end
