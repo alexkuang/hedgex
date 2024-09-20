@@ -12,6 +12,13 @@ defmodule Hedgex do
   alias Hedgex.Api
   alias Hedgex.Events
 
+  @type event :: %{
+          :event => String.t(),
+          :distinct_id => any(),
+          optional(:properties) => map,
+          optional(:timestamp) => DateTime.t()
+        }
+
   @doc """
   Add metadata `properties` to users in PostHog.
 

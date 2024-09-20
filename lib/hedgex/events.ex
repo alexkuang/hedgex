@@ -3,7 +3,7 @@ defmodule Hedgex.Events do
   Construct common events for the `/capture` endpoint
   """
 
-  @spec identify(distinct_id :: any, properties :: map) :: map
+  @spec identify(distinct_id :: any, properties :: map) :: Hedgex.event()
   def identify(distinct_id, properties) do
     %{
       event: "$identify",

@@ -12,13 +12,6 @@ defmodule Hedgex.Api do
 
   alias Hedgex.Env
 
-  @type event_body :: %{
-          :event => String.t(),
-          :distinct_id => any(),
-          optional(:properties) => map,
-          optional(:timestamp) => DateTime.t()
-        }
-
   @doc """
   Send a single event to Posthog.  See https://posthog.com/docs/api/capture#single-event for more details
 
@@ -27,7 +20,7 @@ defmodule Hedgex.Api do
       iex> Hedgex.capture(%{event: "foo_created", distinct_id: "user_12345", properties: %{}})
       :ok
   """
-  @spec capture(event :: event_body, opts :: Keyword.t()) :: :ok | {:error, Exception.t()}
+  @spec capture(event :: Hedgex.event(), opts :: Keyword.t()) :: :ok | {:error, Exception.t()}
   def capture(event, opts \\ []) do
     env = opts[:hedgex] || Env.new()
     event_body = Map.take(event, [:event, :distinct_id, :properties, :timestamp])
@@ -49,7 +42,7 @@ defmodule Hedgex.Api do
       iex> Hedgex.batch([%{event: "foo_created", distinct_id: "user_12345", properties: %{}}])
       :ok
   """
-  @spec batch(batch :: [event_body], opts :: Keyword.t()) :: :ok | {:error, Exception.t()}
+  @spec batch(batch :: [Hedgex.event()], opts :: Keyword.t()) :: :ok | {:error, Exception.t()}
   def batch(batch, opts \\ []) do
     env = opts[:hedgex] || Env.new()
     historical_migration = opts[:historical_migration] || false
