@@ -23,7 +23,11 @@ defmodule Hedgex.Api do
   @spec capture(event :: Hedgex.event(), opts :: Keyword.t()) :: :ok | {:error, Exception.t()}
   def capture(event, opts \\ []) do
     env = opts[:hedgex] || Env.new()
-    event_body = Map.take(event, [:event, :distinct_id, :properties, :timestamp])
+
+    event_body =
+      event
+      |> Map.take([:event, :distinct_id, :properties, :timestamp])
+      |> add_lib_props()
 
     Env.public_req(env)
     |> Req.post(url: "/capture", json: Map.merge(event_body, %{api_key: env.project_api_key}))
@@ -50,7 +54,7 @@ defmodule Hedgex.Api do
     request_body = %{
       api_key: env.project_api_key,
       historical_migration: historical_migration,
-      batch: batch
+      batch: Enum.map(batch, &add_lib_props/1)
     }
 
     Env.public_req(env)
@@ -98,5 +102,11 @@ defmodule Hedgex.Api do
       {:error, err} ->
         {:error, %Hedgex.ReqError{error: err}}
     end
+  end
+
+  defp add_lib_props(event) do
+    event
+    |> Map.put_new(:properties, %{})
+    |> Map.update!(:properties, &Map.put(&1, "$lib", "hedgex"))
   end
 end
