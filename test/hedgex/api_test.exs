@@ -5,7 +5,7 @@ defmodule HedgexTest do
 
   describe "capture/1" do
     test "returns :ok on success" do
-      Req.Test.stub(Hedgex, fn conn -> Req.Test.json(conn, %{}) end)
+      Req.Test.stub(Hedgex.Api, fn conn -> Req.Test.json(conn, %{}) end)
 
       assert :ok ==
                Hedgex.capture(%{
@@ -16,7 +16,7 @@ defmodule HedgexTest do
     end
 
     test "returns posthog error with status code and body" do
-      Req.Test.stub(Hedgex, fn conn -> Plug.Conn.send_resp(conn, 401, "message") end)
+      Req.Test.stub(Hedgex.Api, fn conn -> Plug.Conn.send_resp(conn, 401, "message") end)
 
       assert {:error, %{status: 401, body: "message"}} =
                Hedgex.capture(%{
@@ -28,13 +28,13 @@ defmodule HedgexTest do
 
   describe "batch/1" do
     test "returns :ok on success" do
-      Req.Test.stub(Hedgex, fn conn -> Req.Test.json(conn, %{}) end)
+      Req.Test.stub(Hedgex.Api, fn conn -> Req.Test.json(conn, %{}) end)
 
       assert :ok == Hedgex.batch([%{event: "foo", distinct_id: 12345}])
     end
 
     test "returns posthog error with status code and body" do
-      Req.Test.stub(Hedgex, fn conn -> Plug.Conn.send_resp(conn, 401, "message") end)
+      Req.Test.stub(Hedgex.Api, fn conn -> Plug.Conn.send_resp(conn, 401, "message") end)
 
       assert {:error, %{status: 401, body: "message"}} =
                Hedgex.batch([%{event: "foo", distinct_id: 12345}])
@@ -45,7 +45,7 @@ defmodule HedgexTest do
     test "returns the body on success" do
       decide_response = %{"featureFlags" => %{"my-awesome-flag" => true}}
 
-      Req.Test.stub(Hedgex, fn conn ->
+      Req.Test.stub(Hedgex.Api, fn conn ->
         Req.Test.json(conn, %{"featureFlags" => %{"my-awesome-flag" => true}})
       end)
 
@@ -53,7 +53,7 @@ defmodule HedgexTest do
     end
 
     test "returns posthog error with status code and body" do
-      Req.Test.stub(Hedgex, fn conn -> Plug.Conn.send_resp(conn, 401, "message") end)
+      Req.Test.stub(Hedgex.Api, fn conn -> Plug.Conn.send_resp(conn, 401, "message") end)
 
       assert {:error, %{status: 401, body: "message"}} =
                Hedgex.batch([%{event: "foo", distinct_id: 12345}])
@@ -65,7 +65,7 @@ defmodule HedgexTest do
       user_id = "user_1"
       properties = %{"email" => "foo@example.com"}
 
-      Req.Test.stub(Hedgex, fn conn ->
+      Req.Test.stub(Hedgex.Api, fn conn ->
         {:ok, raw, _conn} = Conn.read_body(conn)
         body = Jason.decode!(raw)
 
