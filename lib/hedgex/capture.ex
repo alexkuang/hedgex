@@ -1,4 +1,30 @@
 defmodule Hedgex.Capture do
+  @moduledoc """
+  Buffered + batched async event pipeline.
+
+  `capture/1` sends the event into a buffer backed by a queue.  Events are drained from the queue and sent to the
+  PostHog API when either (1) there are more than `flush_batch_size` events pending, or (2) `flush_interval`
+  milliseconds have passed since the previous flush, whichever comes first.
+
+  ## Configuration
+
+  ```elixir
+  config :hedgex, :capture,
+    max_queue_size: 10000
+    # ... etc
+  ```
+
+  Options:
+
+  * `max_queue_size`: The size of the queue used to buffer events before sending.  If the queue is full,
+  `Hedgex.capture/1` will return an error.  Defaults to 10000.
+
+  * `flush_interval`: Interval in milliseconds for sending events to the API.  Defaults to 500.
+
+  * `flush_batch_size`: Max number of events in the queue before sending events to the API.  This is best-effort and not
+  a strict limit.  Defaults to 100.
+  """
+
   use GenStage
 
   @type state :: %{

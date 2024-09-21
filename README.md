@@ -16,7 +16,7 @@ def deps do
 end
 ```
 
-## Usage
+## Getting Started
 
 Configure the API:
 
@@ -29,11 +29,12 @@ config :hedgex,
 Send events:
 
 ```elixir
+# see `Hedgex.Capture` for more information
 iex> Hedgex.capture(%{event: "foo_created", distinct_id: "user_12345"})
 :ok
 ```
 
-Work with the API directly:
+Issue API requests directly:
 
 ```elixir
 # provide creds dynamically
