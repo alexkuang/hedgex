@@ -1,6 +1,8 @@
 defmodule Hedgex.CaptureConsumerTest do
   use ExUnit.Case, async: true
 
+  import ExUnit.CaptureLog
+
   describe "Hedgex.CaptureConsumer" do
     @describetag capture_log: true
 
@@ -68,6 +70,70 @@ defmodule Hedgex.CaptureConsumerTest do
         assert_event_meta([event], 500)
       end)
     end
+
+    test "drops events that are too big" do
+      {:ok, capture} = GenStage.start_link(Hedgex.Capture, [])
+
+      {:ok, consumer} =
+        GenStage.start_link(Hedgex.CaptureConsumer,
+          subscribe_to: capture,
+          flush_batch_size: 2
+        )
+
+      Req.Test.allow(Hedgex.Api, self(), consumer)
+
+      event = %{event: "1", distinct_id: 1}
+      big = %{event: "2", distinct_id: 2, properties: %{"f" => String.duplicate("a", 501 * 1024)}}
+
+      assert capture_log(fn ->
+               GenStage.call(capture, {:capture, event})
+               GenStage.call(capture, {:capture, big})
+               assert_event_meta([event], 500)
+             end) =~ "exceeded max size"
+    end
+
+    test "splits requests when a single batch is too big" do
+      {:ok, capture} = GenStage.start_link(Hedgex.Capture, [])
+
+      {:ok, consumer} =
+        GenStage.start_link(Hedgex.CaptureConsumer,
+          subscribe_to: capture,
+          flush_batch_size: 10000,
+          flush_interval: 250
+        )
+
+      Req.Test.allow(Hedgex.Api, self(), consumer)
+
+      # Aiming for two batches in a single flush op:
+      # - ~250KB per event so 4 events = ~1MB
+      # - max batch size = 10MB, so ~40 events = 1 batch
+      # - 50 events gets 1 batch + some change for a second
+      events =
+        Enum.map(1..50, fn i ->
+          %{
+            event: "#{i}",
+            distinct_id: i,
+            properties: %{"#{i}" => String.duplicate("a", 250 * 1024)}
+          }
+        end)
+
+      Enum.each(events, &GenStage.call(capture, {:capture, &1}))
+      assert_receive metadata1, 500
+      assert_receive metadata2, 500
+
+      expected_metadata =
+        events
+        |> Enum.map(&Map.take(&1, [:event, :distinct_id]))
+        |> MapSet.new()
+
+      actual_metadata =
+        metadata1.events
+        |> Enum.concat(metadata2.events)
+        |> Enum.map(&Map.take(&1, [:event, :distinct_id]))
+        |> MapSet.new()
+
+      assert expected_metadata == actual_metadata
+    end
   end
 
   defp assert_duration(duration, tolerance, fun) do
@@ -82,6 +148,12 @@ defmodule Hedgex.CaptureConsumerTest do
 
   defp assert_event_meta(events, timeout \\ 100) do
     assert_receive metadata, timeout
-    assert MapSet.equal?(MapSet.new(metadata.events), MapSet.new(events))
+
+    actual_meta =
+      events
+      |> Enum.map(&Map.take(&1, [:event, :distinct_id]))
+      |> MapSet.new()
+
+    assert MapSet.equal?(MapSet.new(metadata.events), actual_meta)
   end
 end

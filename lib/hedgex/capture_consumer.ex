@@ -1,6 +1,16 @@
 defmodule Hedgex.CaptureConsumer do
   use GenStage
 
+  require Logger
+
+  # PostHog max event size is 1MB, use 500KB limit to be conservative
+  # https://posthog.com/docs/data/ingestion-warnings#discarded-event-exceeding-1mb-limit
+  @max_encoded_size 500 * 1024
+
+  # PostHog max batch request size is 20MB, so use 10MB to be conservative
+  # https://posthog.com/docs/api/capture
+  @max_encoded_batch_size 10 * 1024 * 1024
+
   @type state :: %{
           :queue => :queue.queue(),
           :queue_size => pos_integer | 0,
@@ -58,23 +68,68 @@ defmodule Hedgex.CaptureConsumer do
   end
 
   def handle_info(:flush, state) do
-    events = :queue.to_list(state.queue)
-    event_meta = %{events: Enum.map(events, &Map.take(&1, [:event, :distinct_id]))}
+    batches =
+      state.queue
+      |> :queue.to_list()
+      |> filter_and_batch()
 
-    :telemetry.span([:hedgex, :capture, :flush], event_meta, fn ->
-      %{next_flush_timer: timer} = state
+    Enum.each(batches, fn events ->
+      event_meta = %{events: Enum.map(events, &Map.take(&1, [:event, :distinct_id]))}
 
-      Hedgex.Api.batch(events)
-      :timer.cancel(timer)
+      :telemetry.span([:hedgex, :capture, :flush], event_meta, fn ->
+        %{next_flush_timer: timer} = state
 
-      state =
-        Map.merge(state, %{
-          next_flush_timer: Process.send_after(self(), :flush, state.flush_interval),
-          queue: :queue.new(),
-          queue_size: 0
-        })
+        Hedgex.Api.batch(events)
+        :timer.cancel(timer)
 
-      {{:noreply, [], state}, event_meta}
+        {:ok, event_meta}
+      end)
     end)
+
+    state =
+      Map.merge(state, %{
+        next_flush_timer: Process.send_after(self(), :flush, state.flush_interval),
+        queue: :queue.new(),
+        queue_size: 0
+      })
+
+    {:noreply, [], state}
+  end
+
+  defp filter_and_batch(events) do
+    with_size =
+      Enum.map(events, fn event ->
+        size =
+          event
+          |> Jason.encode_to_iodata!()
+          |> IO.iodata_length()
+
+        {event, size}
+      end)
+
+    {dropped, remaining} =
+      Enum.split_with(with_size, fn {_, size} -> size > @max_encoded_size end)
+
+    Enum.each(dropped, fn {event, _size} ->
+      Logger.warning(
+        "Item exceeded max size #{@max_encoded_size} bytes, dropping. event=#{event[:event]} distinct_id=#{event[:distinct_id]}"
+      )
+    end)
+
+    chunk_fun = fn {event, event_size}, {batch_size, batch} ->
+      new_size = event_size + batch_size
+
+      if new_size >= @max_encoded_batch_size do
+        {:cont, Enum.reverse([event | batch]), {0, []}}
+      else
+        {:cont, {new_size, [event | batch]}}
+      end
+    end
+
+    after_fun = fn
+      {_, batch} -> {:cont, Enum.reverse(batch), {0, []}}
+    end
+
+    Enum.chunk_while(remaining, {0, []}, chunk_fun, after_fun)
   end
 end
