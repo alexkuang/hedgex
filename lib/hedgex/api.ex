@@ -17,7 +17,7 @@ defmodule Hedgex.Api do
 
   ## Examples
 
-      iex> Hedgex.capture(%{event: "foo_created", distinct_id: "user_12345", properties: %{}})
+      iex> Hedgex.Api.capture(%{event: "foo_created", distinct_id: "user_12345", properties: %{}})
       :ok
   """
   @spec capture(event :: Hedgex.event(), opts :: Keyword.t()) :: :ok | {:error, Exception.t()}
@@ -39,7 +39,7 @@ defmodule Hedgex.Api do
 
   ## Examples
 
-      iex> Hedgex.batch([%{event: "foo_created", distinct_id: "user_12345", properties: %{}}])
+      iex> Hedgex.Api.batch([%{event: "foo_created", distinct_id: "user_12345", properties: %{}}])
       :ok
   """
   @spec batch(batch :: [Hedgex.event()], opts :: Keyword.t()) :: :ok | {:error, Exception.t()}
@@ -68,7 +68,7 @@ defmodule Hedgex.Api do
 
   ## Examples
 
-      iex> Hedgex.decide("user_12345", groups: %{company: "Acme, Inc."}}])
+      iex> Hedgex.Api.decide("user_12345", groups: %{company: "Acme, Inc."}}])
       {:ok, %{"featureFlags" => %{"my-awesome-flag" => true}}}
   """
   @spec decide(distinct_id :: any(), opts :: Keyword.t()) ::

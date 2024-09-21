@@ -1,14 +1,12 @@
 defmodule HedgexTest do
   use ExUnit.Case, async: true
 
-  alias Plug.Conn
-
   describe "capture/1" do
     test "returns :ok on success" do
       Req.Test.stub(Hedgex.Api, fn conn -> Req.Test.json(conn, %{}) end)
 
       assert :ok ==
-               Hedgex.capture(%{
+               Hedgex.Api.capture(%{
                  event: "foo",
                  distinct_id: 12345,
                  properties: %{foo_key: "bar", batch: false}
@@ -19,7 +17,7 @@ defmodule HedgexTest do
       Req.Test.stub(Hedgex.Api, fn conn -> Plug.Conn.send_resp(conn, 401, "message") end)
 
       assert {:error, %{status: 401, body: "message"}} =
-               Hedgex.capture(%{
+               Hedgex.Api.capture(%{
                  distinct_id: 12345,
                  properties: %{foo_key: "bar", batch: false}
                })
@@ -30,14 +28,14 @@ defmodule HedgexTest do
     test "returns :ok on success" do
       Req.Test.stub(Hedgex.Api, fn conn -> Req.Test.json(conn, %{}) end)
 
-      assert :ok == Hedgex.batch([%{event: "foo", distinct_id: 12345}])
+      assert :ok == Hedgex.Api.batch([%{event: "foo", distinct_id: 12345}])
     end
 
     test "returns posthog error with status code and body" do
       Req.Test.stub(Hedgex.Api, fn conn -> Plug.Conn.send_resp(conn, 401, "message") end)
 
       assert {:error, %{status: 401, body: "message"}} =
-               Hedgex.batch([%{event: "foo", distinct_id: 12345}])
+               Hedgex.Api.batch([%{event: "foo", distinct_id: 12345}])
     end
   end
 
@@ -49,35 +47,14 @@ defmodule HedgexTest do
         Req.Test.json(conn, %{"featureFlags" => %{"my-awesome-flag" => true}})
       end)
 
-      assert {:ok, decide_response} == Hedgex.decide(12345)
+      assert {:ok, decide_response} == Hedgex.Api.decide(12345)
     end
 
     test "returns posthog error with status code and body" do
       Req.Test.stub(Hedgex.Api, fn conn -> Plug.Conn.send_resp(conn, 401, "message") end)
 
       assert {:error, %{status: 401, body: "message"}} =
-               Hedgex.batch([%{event: "foo", distinct_id: 12345}])
-    end
-  end
-
-  describe "identify/1" do
-    test "executes a `capture` with provided distinct id and properties" do
-      user_id = "user_1"
-      properties = %{"email" => "foo@example.com"}
-
-      Req.Test.stub(Hedgex.Api, fn conn ->
-        {:ok, raw, _conn} = Conn.read_body(conn)
-        body = Jason.decode!(raw)
-
-        assert conn.request_path == "/capture"
-        assert body["distinct_id"] == user_id
-        assert body["event"] == "$identify"
-        assert body["properties"]["$set"] == properties
-
-        Req.Test.json(conn, %{})
-      end)
-
-      assert :ok == Hedgex.identify(user_id, properties)
+               Hedgex.Api.batch([%{event: "foo", distinct_id: 12345}])
     end
   end
 end

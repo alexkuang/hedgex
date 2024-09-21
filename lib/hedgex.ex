@@ -1,12 +1,6 @@
 defmodule Hedgex do
   @moduledoc """
   General methods for the Posthog API.
-
-  ## Options
-
-  Common options
-
-    * `:hedgex` - a `Hedgex.Env` containing API configuration. Defaults to a context constructed by application config.
   """
 
   alias Hedgex.Api
@@ -24,11 +18,10 @@ defmodule Hedgex do
 
   See: https://posthog.com/docs/api/capture#identify
   """
-  def identify(distinct_id, properties, opts \\ []) do
-    capture(Events.identify(distinct_id, properties), opts)
+  def identify(distinct_id, properties) do
+    capture(Events.identify(distinct_id, properties))
   end
 
-  defdelegate capture(event, opts \\ []), to: Api
-  defdelegate batch(events, opts \\ []), to: Api
+  defdelegate capture(event), to: Hedgex.Capture
   defdelegate decide(distinct_id, opts \\ []), to: Api
 end
