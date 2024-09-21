@@ -11,7 +11,7 @@ Posthog client for Elixir.  WIP and highly experimental.
 ```elixir
 def deps do
   [
-    {:hedgex, "~> 0.1.0"}
+    {:hedgex, "~> 0.3.0"}
   ]
 end
 ```
