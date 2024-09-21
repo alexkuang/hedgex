@@ -27,6 +27,7 @@ defmodule Hedgex.CaptureConsumer do
 
   @spec start_link(options()) :: GenServer.on_start()
   def start_link(init \\ []) do
+    Process.flag(:trap_exit, true)
     GenStage.start_link(__MODULE__, init, name: __MODULE__)
   end
 
@@ -68,6 +69,26 @@ defmodule Hedgex.CaptureConsumer do
   end
 
   def handle_info(:flush, state) do
+    flush_events(state)
+
+    state =
+      Map.merge(state, %{
+        next_flush_timer: Process.send_after(self(), :flush, state.flush_interval),
+        queue: :queue.new(),
+        queue_size: 0
+      })
+
+    {:noreply, [], state}
+  end
+
+  def terminate(_, %{queue: {[], []}}), do: :ok
+
+  def terminate(_, state) do
+    flush_events(state)
+    :ok
+  end
+
+  defp flush_events(state) do
     batches =
       state.queue
       |> :queue.to_list()
@@ -85,15 +106,6 @@ defmodule Hedgex.CaptureConsumer do
         {:ok, event_meta}
       end)
     end)
-
-    state =
-      Map.merge(state, %{
-        next_flush_timer: Process.send_after(self(), :flush, state.flush_interval),
-        queue: :queue.new(),
-        queue_size: 0
-      })
-
-    {:noreply, [], state}
   end
 
   defp filter_and_batch(events) do
