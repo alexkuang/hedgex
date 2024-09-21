@@ -21,7 +21,8 @@ defmodule Hedgex.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [:logger]
+      extra_applications: [:logger],
+      mod: {Hedgex.Application, []}
     ]
   end
 
@@ -29,6 +30,7 @@ defmodule Hedgex.MixProject do
   defp deps do
     [
       {:req, "~> 0.5.0"},
+      {:gen_stage, "~> 1.2.0"},
       {:plug, "~> 1.0", only: :test},
       {:dialyxir, "~> 1.4", only: [:dev], runtime: false},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
