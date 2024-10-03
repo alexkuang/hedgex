@@ -48,6 +48,11 @@ defmodule Hedgex.Capture do
     GenStage.call(__MODULE__, {:capture, event})
   end
 
+  @spec queue_size() :: pos_integer | 0
+  def queue_size do
+    GenStage.call(__MODULE__, :queue_size)
+  end
+
   ## Callbacks
 
   def init(opts) do
@@ -80,6 +85,11 @@ defmodule Hedgex.Capture do
     else
       {:reply, {:error, :queue_full}, [], state}
     end
+  end
+
+  @spec handle_call(:queue_size, GenServer.from(), state) :: term
+  def handle_call(:queue_size, _from, state) do
+    {:reply, state.queue_size, [], state}
   end
 
   def handle_demand(demand, state) do

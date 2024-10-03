@@ -72,5 +72,19 @@ defmodule Hedgex.CaptureTest do
       assert :ok = GenStage.call(stage, req)
       assert {:error, :queue_full} = GenStage.call(stage, req)
     end
+
+    test "returns current queue depth" do
+      {:ok, stage} = GenStage.start_link(Hedgex.Capture, max_queue_size: 100)
+
+      assert 0 == GenStage.call(stage, :queue_size)
+
+      req = {:capture, %{event: "1", distinct_id: 1}}
+
+      assert :ok = GenStage.call(stage, req)
+      assert 1 == GenStage.call(stage, :queue_size)
+
+      assert :ok = GenStage.call(stage, req)
+      assert 2 == GenStage.call(stage, :queue_size)
+    end
   end
 end
